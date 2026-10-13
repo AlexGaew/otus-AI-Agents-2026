@@ -1,0 +1,14 @@
+# Личные настройки агента
+.claude/settings.local.json
+
+# Секреты
+.env
+.env.*
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# Playwright
+node_modules/
+test-results/
+playwright-report/
