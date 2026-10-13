@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Эскиз бота «входящие»</title>
+<style>
+  :root {
+    --bg: #e7ebf0; --panel: #ffffff; --me: #d9fdd3; --bot: #ffffff;
+    --text: #1c1e21; --muted: #6b7280; --accent: #2481cc; --line: #d1d5db;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1621; --panel: #17212b; --me: #2b5278; --bot: #182533;
+      --text: #f1f5f9; --muted: #8b9aa8; --accent: #6ab3f3; --line: #2b3a4a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.4 system-ui, sans-serif; display: flex; justify-content: center; }
+  .app { width: 100%; max-width: 480px; min-height: 100vh; display: flex; flex-direction: column;
+         background: var(--bg); }
+  .banner { background: #fff4cc; color: #5c4400; padding: 8px 16px; font-size: 13px; }
+  header { background: var(--panel); padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  header b { display: block; }
+  header span { color: var(--muted); font-size: 13px; }
+  #chat { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  .msg { max-width: 85%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap;
+         overflow-wrap: anywhere; }
+  .msg.me { align-self: flex-end; background: var(--me); }
+  .msg.bot { align-self: flex-start; background: var(--bot); }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--accent);
+           background: transparent; color: var(--accent); padding: 4px 10px; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.tag[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .tag-done { color: var(--accent); }
+  form { display: flex; gap: 8px; padding: 12px 16px; background: var(--panel);
+         border-top: 1px solid var(--line); }
+  input { flex: 1; font: inherit; padding: 8px 12px; border-radius: 8px;
+          border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  form button { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="banner">Эскиз интерфейса. Это макет, не бот: данные хранятся в памяти страницы, теги подбираются по словарю, а не моделью.</div>
+  <header><b>входящие</b><span>бот</span></header>
+  <div id="chat" aria-live="polite"></div>
+  <form id="composer" autocomplete="off">
+    <input id="input" data-testid="input" aria-label="Сообщение" placeholder="Заметка, ссылка, /search слово, /digest">
+    <button type="submit" data-testid="send">Отправить</button>
+  </form>
+</div>
+<script>
+  const KEYWORDS = [['java', '#java'], ['spring', '#spring'], ['docker', '#docker']];
+  const store = [];
+  const chat = document.getElementById('chat');
+
+  function el(tag, props = {}, ...children) {
+    const node = Object.assign(document.createElement(tag), props);
+    node.append(...children);
+    return node;
+  }
+
+  function say(who, text, testid) {
+    const m = el('div', { className: `msg ${who}` }, text);
+    if (testid) m.dataset.testid = testid;
+    chat.append(m);
+    chat.scrollTop = chat.scrollHeight;
+    return m;
+  }
+
+  const bot = (text) => say('bot', text, 'bot-message');
+  const isLink = (s) => /^https?:\/\/\S+$/i.test(s);
+
+  function titleFor(url) {
+    const u = new URL(url);
+    const last = u.pathname.split('/').filter(Boolean).pop();
+    return last ? `${u.hostname} — ${last}` : u.hostname;
+  }
+
+  function suggestTags(text) {
+    const low = text.toLowerCase();
+    const found = KEYWORDS.filter(([k]) => low.includes(k)).map(([, t]) => t);
+    return found.length ? found : [isLink(text) ? '#ссылка' : '#заметка'];
+  }
+
+  function save(text) {
+    const link = isLink(text);
+    const entry = { text, title: link ? titleFor(text) : '', tags: suggestTags(text), at: new Date() };
+    const m = bot(link
+      ? `Сохранено: «${entry.title}»\nКраткое содержание: (заглушка, в боте его даст модель)\nТеги:`
+      : 'Сохранено. Теги:');
+    const tags = el('div', { className: 'row' });
+    const selected = new Set(entry.tags);
+    entry.tags.forEach((t) => {
+      const b = el('button', { type: 'button', className: 'tag', textContent: t });
+      b.dataset.testid = 'tag';
+      b.setAttribute('aria-pressed', 'true');
+      b.onclick = () => {
+        const on = b.getAttribute('aria-pressed') !== 'true';
+        b.setAttribute('aria-pressed', String(on));
+        on ? selected.add(t) : selected.delete(t);
+      };
+      tags.append(b);
+    });
+    const actions = el('div', { className: 'row' });
+    const confirm = el('button', { type: 'button', textContent: 'Подтвердить' });
+    confirm.dataset.testid = 'confirm';
+    const edit = el('button', { type: 'button', textContent: 'Изменить' });
+    edit.onclick = () => bot('Нажмите на тег, чтобы убрать или вернуть его, затем «Подтвердить».');
+    confirm.onclick = () => {
+      entry.tags = [...selected];
+      store.push(entry);
+      tags.replaceChildren(...entry.tags.map((t) => el('span', { className: 'tag-done', textContent: t })));
+      actions.remove();
+      bot(`Теги подтверждены: ${entry.tags.join(' ') || 'без тегов'}`);
+    };
+    actions.append(confirm, edit);
+    m.append(tags, actions);
+  }
+
+  function search(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return bot('Укажите слово: /search слово');
+    const hits = store.filter((e) => [e.text, e.title, ...e.tags].some((s) => s.toLowerCase().includes(q)));
+    if (!hits.length) return bot(`Ничего не найдено по запросу «${query.trim()}»`);
+    bot(`Найдено: ${hits.length}\n` + hits.map((e, i) =>
+      `${i + 1}. ${e.title || e.text} — ${e.tags.join(' ')}`).join('\n'));
+  }
+
+  function digest() {
+    if (!store.length) return bot('Дайджест: за вчера записей нет');
+    const groups = new Map();
+    store.forEach((e) => e.tags.forEach((t) => {
+      if (!groups.has(t)) groups.set(t, []);
+      groups.get(t).push(e);
+    }));
+    const m = bot('Дайджест за вчера (в макете: все записи сессии)');
+    groups.forEach((items, tag) => {
+      const g = el('div', {}, `${tag} — ${items.length}`);
+      g.dataset.testid = 'digest-group';
+      m.append(g);
+    });
+  }
+
+  document.getElementById('composer').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const input = document.getElementById('input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    say('me', text, 'my-message');
+    if (text.startsWith('/search')) search(text.slice(7));
+    else if (text === '/digest') digest();
+    else save(text);
+  });
+
+  bot('Привет! Пришлите заметку или ссылку. /search слово — поиск, /digest — дайджест.');
+</script>
+</body>
+</html>

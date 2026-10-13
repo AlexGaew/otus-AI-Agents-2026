@@ -1,0 +1,11 @@
+{
+  "name": "bot-mockup",
+  "private": true,
+  "description": "Эскиз интерфейса бота «входящие». Не часть бота, учебное упражнение с Playwright.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0"
+  }
+}
