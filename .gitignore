@@ -12,5 +12,11 @@
 node_modules/
 test-results/
 playwright-report/
-
+target/
 .ignore
+
+# IDE и ОС
+.idea/
+*.iml
+.vscode/
+.DS_Store

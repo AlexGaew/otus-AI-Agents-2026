@@ -6,14 +6,17 @@
 
 ## Команды
 
-Скелета проекта ещё нет, команды ниже заполнить на шаге 2 ТЗ (после выбора Maven или Gradle):
+Бот (Spring Boot, Maven) и макет интерфейса в `playground/bot-mockup/` (нужен Node.js):
 
-- Установка / сборка: TODO
-- Запуск (локально + PostgreSQL в Docker): TODO
-- Все тесты: TODO
-- Один тест: TODO
-- Линтер / форматирование: TODO (план: `./mvnw spotless:check` и `./mvnw spotless:apply`)
-- e2e-тесты макета интерфейса: `cd playground/bot-mockup && npm test`
+- Java: только 21. `JAVA_HOME` на JDK 21 (macOS: `/usr/libexec/java_home -v 21`); на другой версии `./mvnw` падает по правилу enforcer. Spotless: google-java-format закреплён на 1.28.0 (1.37.0 падает).
+- Установка макета: `cd playground/bot-mockup && npm install && npx playwright install chromium`
+- Запуск макета: открыть `playground/bot-mockup/index.html` в браузере
+- Все e2e-тесты макета: `cd playground/bot-mockup && npm test`
+- Один e2e-тест: `cd playground/bot-mockup && npx playwright test -g "поиск без совпадений"`
+- Юнит-тесты hooks: `python3 .claude/hooks/test_block_bash_writes.py`
+- Бот, сборка и юнит-тесты: `./mvnw test` (полная проверка: `./mvnw verify`)
+- Бот, линтер: `./mvnw spotless:check`; автоформат: `./mvnw spotless:apply`
+- Бот, запуск с PostgreSQL в Docker: TODO, ждёт бота на TelegramBots и `compose.yaml` (шаг 2)
 
 ## Конвенции
 
@@ -22,7 +25,7 @@
 
 ## Правила работы
 
-- Основная ветка `main`. Каждый шаг ТЗ (F1…F5, деплой) — отдельная ветка и отдельный коммит или серия коммитов.
+- Основная ветка `main`; разработчик один, поэтому работаем и пушим прямо в неё, без веток. Каждый шаг ТЗ (F1…F5, деплой) — отдельный коммит или серия коммитов.
 - Коммиты — только по просьбе пользователя.
 - Работать строго по порядку шагов из ТЗ; не реализовывать то, что в разделе «Вне рамок».
 - Запрещено:
