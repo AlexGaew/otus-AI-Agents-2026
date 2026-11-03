@@ -20,3 +20,6 @@ target/
 *.iml
 .vscode/
 .DS_Store
+
+# Кэш исследования GSD
+.planning/research/.cache/
