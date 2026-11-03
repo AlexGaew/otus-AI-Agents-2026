@@ -1,8 +1,21 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "extraKnownMarketplaces": {
+    "ast-index": {
+      "source": {
+        "source": "github",
+        "repo": "defendend/Claude-ast-index-search"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ast-index@ast-index": true
+  },
   "permissions": {
     "defaultMode": "acceptEdits",
     "allow": [
+      "Bash(ya tool ast-index *)",
+      "Bash(ast-index *)",
       "Bash(./mvnw test:*)",
       "Bash(./mvnw -q test:*)",
       "Bash(./mvnw spotless:check:*)",

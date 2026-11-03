@@ -8,53 +8,52 @@
 - Правила с `paths` (`tdd`, `java-main`, `tests`) подгружаются только при работе с подходящими файлами; `run-tests-before-done` и `session-memory` глобальные
 - `block_protected.py` ловит только Edit/Write, поэтому для Bash есть `block_bash_writes.py`
 - Ничего не коммитим без просьбы пользователя
-- Индекс ast-index сам не обновляется (Graft обновляется сам перед запросом): для него есть hook `SessionEnd` в `settings.json` (`ast-index update`), работает со следующей сессии; без индекса команда отвечает «Index not found», тогда нужен `ast-index rebuild`. Если поиск не находит свежий файл, запусти `ast-index update` вручную
+- Индекс ast-index сам не обновляется (Graft обновляется сам перед запросом): для него есть hook `SessionEnd` в `settings.json` (`ast-index update`), работает со следующей сессии; без индекса команда отвечает «Index not found», тогда нужен `ast-index rebuild`. Если поиск не находит свежий файл, запусти `ast-index update` вручную. Индекс лежит в кэше пользователя, не в репозитории
+- `block_bash_writes` блокирует любую bash-команду, в тексте которой есть `.env`, даже в heredoc; такой текст писать через Write/Edit
+- Maven в терминале и в hooks берёт `JAVA_HOME`; после правки `~/.zshrc` уже открытые окна нужно перезапустить
+- TelegramBots 10.3.0 отличается от документации ctx7 для 6.9.7.1: API сверять по jar. Класс бота в 10.3.0 — `SpringLongPollingBot`, не `TelegramLongPollingBot` из старых примеров
+- `ast-index search` не индексирует строковые литералы вроде `data-testid`
+- Команды GSD писать в каталог `/Users/aleksandrgaev/Developer_materials/Otus/otus-AI-Agents-2026`. Сессия Grok — отдельный клон, её `.planning` другие агенты не видят
+- Образ `postgres:latest` сейчас линия 18 с другим путём данных. Том не удалять: `docker compose down -v` его стирает
 
-## 2026-10-14 (позже): AccessPolicy, MessageHandler, правки по обратной связи
-
-**Сделано**
-- Green: `src/main/java/notesbot/access/AccessPolicy.java`, `src/main/java/notesbot/bot/MessageHandler.java`; `./mvnw test` 6 из 6, `spotless:check` чистый
-- `docs/about.md`: «Как проверяли» (`java-main.md` подгружается при Read файла из `src/main`, `tests.md` и `tdd.md` при Read из `src/test`), скриншоты 1, 2, 4 вписаны, красная и зелёная фазы TDD
-- В `docs/screenshots/` добавлены `lint.png`, `e2e-green-test.png`, `error_tests.png`, `test_passed-1.png`, `test_passed-2.png`, `отчет-по-п1.png`
-
-**Решение**
-- `MessageHandler` пока отвечает «Принято: <текст>» только пользователю из белого списка; сохранения и теги будут на шагах 3–4
-- Скриншот lint получен записью битого `playground/scratch.json` (hook `check_after_edit`), файл удалён
-
-**Дальше**
-- Скриншот 3 (`memory-session2.png`): в новой сессии спросить «на чём мы закончили?» и снять ответ
-- Бот на TelegramBots с настройкой из переменных окружения, `compose.yaml` с PostgreSQL; после этого отметить шаг 2 в `plan.md`
-- `AGENTS.md`, «Команды»: заполнить сборку, тесты, линтер бота (`./mvnw test`, `./mvnw spotless:check`, `./mvnw spotless:apply`); запуск с PostgreSQL ждёт `compose.yaml`
-- В `about.md`: убрать «Скелета бота пока нет», вписать или переименовать `отчет-по-п1.png`
-- Добавить `target/` в `.gitignore`; заменить остатки `inbox` в `playground/bot-mockup/tests/inbox.spec.js`
-- Ничего не закоммичено
-
-**Ловушки**
-- Правила с `paths` подгружаются при Read подходящего файла, а Write их не подгружает
-- `./mvnw test` падает целиком, пока у любого теста нет production-класса (тесты компилируются вместе)
-
-## 2026-10-14: начало скелета, Java 21
+## 2026-11-03: GSD Discovery
 
 **Сделано**
-- `pom.xml` (Spring Boot 4.1.1, Java 21, JDBC + PostgreSQL, TelegramBots 10.3.0, Spotless), Maven Wrapper `mvnw`
-- Тесты первыми (red): `AccessPolicyTest`, `MessageHandlerTest` в `src/test/java/notesbot/`; production-кода ещё нет
-- По обратной связи: `docs/about.md` (с TODO), команды макета в `AGENTS.md`, `docs/screenshots/e2e-mockup-search.png`
-- Поставлен JDK 21 (Temurin) в `~/Library/Java/JavaVirtualMachines/temurin-21`
+- В этом каталоге, ветка `hw2`: `.planning/PROJECT.md`, `.planning/config.json` и `.planning/research/` (`STACK.md`, `FEATURES.md`, `ARCHITECTURE.md`, `PITFALLS.md`, `SUMMARY.md`). Проверка `verify-summary` для `SUMMARY.md` прошла
+- Коммиты: `f28ff79`, `294d2c2`, `e83fe92`, затем `4cf0f24` убрал `.planning/research/.cache/` из дерева и дописал его в `.gitignore`. `origin/hw2` указывает на `4cf0f24`. В истории `e83fe92` кэш ещё есть
+- В `README.md` дописаны Discovery, список файлов `.planning/` и снимки `usage/` (Context usage до и после compact). Коммита нет
 
 **Решение**
-- Пакет `notesbot` (без имени автора), groupId и artifactId `notesbot`; имя `inbox` убрано
-- Только Java 21: `JAVA_HOME` в `~/.zshrc` и `.claude/settings.local.json`, maven-enforcer валит сборку на другой версии
-- Форматер остаётся google-java-format, версия закреплена на 1.28.0: 1.37.0 падает с `InvocationTargetException` (причина не выяснена, на JDK 25 дело не было)
+- Этап Discovery здесь — исследование домена до требований, каталог `.planning/research/`. Отдельного `DISCOVERY.md` нет: его пишет планирование уже существующей фазы, а фаз ещё нет
+- Стек из ТЗ не менялся. Предложенные фазы совпадают с шагами 2–7 `docs/plan.md`
+- Настройки GSD взяты как запуск без опроса: режим yolo, исследование включено, модель сессии (`inherit`), документы планирования коммитятся
 
 **Дальше**
-- Шаг 2 дальше по TDD: `AccessPolicy` и `MessageHandler` в `src/main/java/notesbot/` (green), затем бот на TelegramBots, конфигурация из переменных окружения, `compose.yaml` с PostgreSQL
-- После зелёных тестов: заполнить команды бота в `AGENTS.md`, раздел «Как проверяли» и скриншоты в `docs/about.md`
-- Поменять остатки старого имени: `playground/bot-mockup/tests/inbox.spec.js`, строка про пакет в старой записи ниже
-- Добавить `target/` в `.gitignore`; выяснить, что за папка `screens/`
-- Ничего не закоммичено
+- Если продолжать GSD: требования и roadmap, не повторное исследование. Шаг 2 бота по-прежнему открыт
+- `.planning/codebase/` всё ещё не в git
 
 **Ловушки**
-- Hook `block_bash_writes` блокирует любую bash-команду, где в тексте встречается `.env`, даже в heredoc; такой текст писать через Write/Edit
-- Maven в терминале и в hooks берёт `JAVA_HOME`; уже открытые окна нужно перезапустить после правки `~/.zshrc`
-- Отложенные вопросы: TelegramBots 10.3.0 отличается от ctx7-документации 6.9.7.1 (проверять API по jar)
+- Стартер TelegramBots 10.3.0 собран против Boot 3.5.5. Классы на Boot 4.1.1 проверены по jar, живой запуск не делался
+- Часовой пояс и час дайджеста в ТЗ не заданы
+
+## 2026-11-02: навигация для Grok
+
+**Сделано**
+- Индекс ast-index собран: 6 файлов, 26 символов. Правило `.claude/rules/ast-index.md`. В `.claude/settings.json` добавлены marketplace, плагин и разрешение `Bash(ast-index *)`
+- Graft подключён к Grok: `.grok/skills/graft/SKILL.md` и `.grok/config.toml` с MCP. Граф уже был, `graft check` совпадает с кодом
+
+**Решение**
+- `AGENTS.md`, `CLAUDE.md`, правила, навыки и hooks не переписывал: Grok их уже читает
+- `graft init` только для grok и без пересборки графа: файлы Claude уже были, `--deep` не запускал (это платный проход LLM, структурного графа хватает)
+- Детектор ast-index помечает `pom.xml` как Android. Это Spring Boot, поэтому в правило не попали команды Dagger, Compose и React
+
+**Дальше**
+- Шаг 2 плана всё ещё открыт: бот на TelegramBots, конфигурация из переменных окружения, `compose.yaml` с PostgreSQL. Отметить шаг после тестов
+- Новая сессия Grok подхватит `.grok/config.toml` после перезапуска
+- Ничего не закоммичено. В коммит, если попросят: `.claude/rules/ast-index.md`, правка `.claude/settings.json`, каталог `.grok/`. Каталог `graft/` в git не класть
+
+**Ловушки**
+- `ast-index search "data-testid"` пустой: это литерал, не символ
+- Обновление graft с 0.21.1 до 0.28.1 не ставил
+
 

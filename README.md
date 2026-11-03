@@ -4,7 +4,7 @@
 
 Требования: [`ТЗ-telegram-bot.md`](ТЗ-telegram-bot.md). План и журнал работы: [`docs/plan.md`](docs/plan.md), [`docs/memory.md`](docs/memory.md).
 
-**Статус:** шаг 1 из 7 (настройка агента) готов; кода бота ещё нет, он начнётся с шага 2.
+**Статус:** шаг 1 из 7 готов. В `src/` есть `AccessPolicy` и `MessageHandler`. Шаг 2 (приложение, переменные окружения, PostgreSQL, ответ только владельцу) открыт. Этап Discovery в GSD пройден — раздел ниже.
 
 ## Как агент работает в проекте
 
@@ -42,3 +42,48 @@ npm test
 ## Команды бота
 
 Появятся после шага 2 (скелет Spring Boot). Список ведётся в `AGENTS.md`.
+
+## Планирование GSD
+
+3 ноября 2026 прошли этап Discovery в GSD и собрали каталог `.planning/` в этом репозитории, ветка `hw2`.
+
+Discovery здесь — исследование домена до требований и roadmap. Итог — `.planning/research/SUMMARY.md`: проверка сводки прошла, уверенность средняя, предложенные фазы совпадают с шагами 2–7 [`docs/plan.md`](docs/plan.md). Отдельного `DISCOVERY.md` нет: его пишет планирование уже существующей фазы. Требований, `ROADMAP.md` и фаз ещё нет. Стек из ТЗ не менялся.
+
+Коммиты только этих документов, локально, без отправки на GitHub: `f28ff79` (контекст проекта), `294d2c2` (настройки), `e83fe92` (исследование).
+
+### Файлы `.planning/`
+
+| Файл | Содержание |
+|---|---|
+| `.planning/PROJECT.md` | Что уже сделано, что в работе, что вне рамок |
+| `.planning/config.json` | Настройки GSD: режим без лишних подтверждений, исследование включено, документы планирования коммитятся |
+| `.planning/research/SUMMARY.md` | Сводка Discovery |
+| `.planning/research/STACK.md` | Java 21, Spring Boot 4.1.1, TelegramBots 10.3.0 (`SpringLongPollingBot`), PostgreSQL. Новых зависимостей нет |
+| `.planning/research/FEATURES.md` | Функции F1–F5 по ТЗ |
+| `.planning/research/ARCHITECTURE.md` | Как собирать бота поверх `AccessPolicy` и `MessageHandler`, порядок шагов 2–7 |
+| `.planning/research/PITFALLS.md` | Белый список до любой записи и ответа, один поток опроса, схема на PostgreSQL, образ `postgres:16` и запрет стирать том |
+| `.planning/research/.cache/` | Четыре json-файла с пометками источников исследования |
+
+Карта кода лежит в `.planning/codebase/` и в git пока не входит:
+
+| Файл | Содержание |
+|---|---|
+| `.planning/codebase/STACK.md` | Стек по фактическому коду |
+| `.planning/codebase/INTEGRATIONS.md` | Внешние системы |
+| `.planning/codebase/ARCHITECTURE.md` | Текущие классы |
+| `.planning/codebase/STRUCTURE.md` | Раскладка каталогов |
+| `.planning/codebase/CONVENTIONS.md` | Соглашения |
+| `.planning/codebase/TESTING.md` | Как устроены тесты |
+| `.planning/codebase/CONCERNS.md` | Риски текущего кода |
+
+## Сжатие контекста
+
+Папка [`usage/`](usage/) показывает экран **Context usage** в Grok до и после команды compact. Compact сжимает историю сессии, счётчик контекста это фиксирует. Модель на обоих снимках — grok-4.7. Системный промпт, инструменты, навыки и `AGENTS.md` занимают те же доли.
+
+До, [`usage/usegeFrom.png`](usage/usegeFrom.png): 137k из 256k токенов (53%), сообщения 117k.
+
+![Контекст до compact](usage/usegeFrom.png)
+
+После, [`usage/usageTo.png`](usage/usageTo.png): 29.9k из 256k (12%), сообщения 23.9k.
+
+![Контекст после compact](usage/usageTo.png)
